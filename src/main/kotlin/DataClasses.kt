@@ -1,64 +1,76 @@
+import java.sql.Timestamp
+
 data class User(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val userName: String,
+    val password: String,
+    val email: String,
+    val createTime: Timestamp
 )
 
 data class People(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val fullName: String,
+    val yearOfBirth: Int?
 )
 
 data class PeopleFunction(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val name: String
 )
 
 data class MusicAlbum(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val name: String,
+    val year: Int,
+    val poster: String?
 )
 
 data class FilmSeries(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val name: String,
+    val description: String?
 )
 
 data class Film(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val name: String,
+    val year: Int,
+    val duration: Int,
+    val description: String,
+    val poster: String?,
+    val filmSeriesId: Int?,
+    val bookId: Int?
 )
 
 data class Music(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val name: String,
+    val year: Int,
+    val duration: Int
 )
 
 data class FilmGenre(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val name: String,
+    val description: String?
 )
 
 data class Top(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val name: String
 )
 
 data class MusicGenre(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val name: String,
+    val description: String?
 )
 
 data class BookGenre(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val name: String,
+    val description: String?
 )
 
 data class Book(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val name: String,
+    val year: Int,
+    val description: String,
+    val poster: String?,
+    val bookSeriesId : Int?
 )
 
 data class BookSeries(
-    var id: Int
-// TODO: 15.04.2021 Заполнить поля
+    val name: String,
+    val description: String?
 )
