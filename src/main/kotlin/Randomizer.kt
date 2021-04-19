@@ -15,10 +15,9 @@ class Randomizer {
     private val forWhomList = readingFile("topForWhomList.txt")
 
     private fun readingFile(name: String): List<String> {
-        val uri = this.javaClass.getResource("/$name").toURI()
-        val inputStream: InputStream = File(uri).inputStream()
+        val inputStream = this::class.java.classLoader.getResourceAsStream(name)
         val list = mutableListOf<String>()
-        inputStream.bufferedReader().forEachLine { list.add(it) }
+        inputStream!!.bufferedReader().forEachLine { list.add(it) }
         return list
     }
 
@@ -141,7 +140,6 @@ class Randomizer {
                     if (true) {         // TODO: Игорь проверяет, что выбранный id есть в таблице top_has_film
                         // TODO: Игорь добавляет запись в бд (таблица top_has_film). Данные - topId, elId, place
                         check = true    // TODO: Игорь заполняет индикатор (true - запись добавлена, false - нет)
-                        TODO()
                     } else
                         check = false
                 }
@@ -149,7 +147,6 @@ class Randomizer {
                     if (true) {         // TODO: Игорь проверяет, что выбранный id есть в таблице top_has_music
                         // TODO: Игорь добавляет запись в бд (таблица top_has_music). Данные - topId, elId, place
                         check = true    // TODO: Игорь заполняет индикатор (true - запись добавлена, false - нет)
-                        TODO()
                     } else
                         check = false
                 }
@@ -157,7 +154,6 @@ class Randomizer {
                     if (true) {         // TODO: Игорь проверяет, что выбранный id есть в таблице top_has_book
                         // TODO: Игорь добавляет запись в бд (таблица top_has_book). Данные - topId, elId, place
                         check = true    // TODO: Игорь заполняет индикатор (true - запись добавлена, false - нет)
-                        TODO()
                     } else
                         check = false
                 }
@@ -176,7 +172,7 @@ class Randomizer {
         return User("Teacons", "123321", "kek@gmail.com", Timestamp(Calendar.getInstance().timeInMillis))
     }
 
-    fun fillGenre(type: Int) {  // type: 0 - фильм, 1 - музыка, 2 - книга
+    private fun fillGenre(type: Int) {  // type: 0 - фильм, 1 - музыка, 2 - книга
         // Определение нужного файла
         val fileName = when (type) {
             0 -> "filmGenre.txt"
