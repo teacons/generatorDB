@@ -12,6 +12,7 @@ class Randomizer {
     private val verbList = readingFile("verbList.txt")
     private val phraseologicalList = readingFile("phraseologicalList.txt")
     private val fullNameList = readingFile("fullNameList.txt")
+    private val forWhomList = readingFile("topForWhomList.txt")
 
     private fun readingFile(name: String): List<String> {
         val uri = this.javaClass.getResource("/$name").toURI()
@@ -82,21 +83,7 @@ class Randomizer {
         return 0
     }
 
-/*    private fun randomFilmGenre(): FilmGenre {
-        // TODO: 15.04.2021 Реализовать генерацию объекта FilmGenre (Неточно)
-        return FilmGenre(
-            "Драма",
-            "Драматические фильмы – один из наиболее распространенных кинематографических жанров. Как правило, эти фильмы повествуют о частной жизни и социальных конфликтах персонажей, акцентируя внимание на воплощенных в их поступках и поведении общечеловеческих противоречиях. Характерной чертой жанра является приближенная к реальности стилистика и бытовой сюжет.\n" +
-                    "\n" +
-                    "Драма (с древнегреческого языка – действие) понятие очень обширное, пришедшее в кино из театра и литературы. До появления кино и телевидения в театре этот термин использовался для описания типа пьесы, которая не является ни комедией, ни трагедией.\n" +
-                    "\n" +
-                    "В связи с этим, при описании конкретного фильма, слово драма чаще всего используется в сочетании с дополнительными терминами. Такое разделение помогает получить более конкретное представление о месте действия фильма и поднимаемых в нем вопросов.\n" +
-                    "\n" +
-                    "Благодаря близким многим зрителям бытовым сюжетам и реалистичности, лучшие драматические фильмы современности и прошлого века пользуются огромной популярностью. Смотреть такие фильмы можно по нескольку раз."
-        )
-    }*/
-
-    fun addTop(type: Int = Random.nextInt(0, 3)) { // type: значение по умолчанию - без разницы (выбирается рандомно); 0 - книга, 1 -фильм, 2 - музыка
+    fun addTop(type: Int = Random.nextInt(0, 3)) { // type: значение по умолчанию - без разницы (выбирается рандомно); 0 - фильм, 1 - музыка, 2 - книга
         // Подготовка данных
         val noun: String
         val lastId: Int
@@ -104,17 +91,11 @@ class Randomizer {
 
         when (type) {
             0 -> {
-                noun = "книг"
-                lastId = 10     // TODO: Игорь выдирает из бд последний id (таблица book)
-                numId = 10      // TODO: Игорь выдирает из бд количество записей в таблице book
-                // TODO: совпадают?
-            }
-            1 -> {
                 noun = "фильмов"
                 lastId = 10     // TODO: Игорь выдирает из бд последний id (таблица film)
                 numId = 10      // TODO: Игорь выдирает из бд количество записей в таблице film
             }
-            2 -> {
+            1 -> {
                 noun = "песен"
                 lastId = 10     // TODO: Игорь выдирает из бд последний id (таблица music)
                 numId = 10      // TODO: Игорь выдирает из бд количество записей в таблице music
@@ -132,7 +113,6 @@ class Randomizer {
         // Генерация имени топа
         val adj = adjectiveList.random()
         //val filmList = listOf("IMDb", "Киноафиши", "сайта kinonews.ru", "Кинопоиска", "Netflix", "сайта MyShows", "IVI", "YouTube")
-        val forWhomList = readingFile("topForWhomList.txt")
         val name = "Топ-$num " + adj.substring(0, adj.length - 2) + "ых " + noun + " " + forWhomList.random() +
                 " (автор - " + fullNameList.random() + ")"
 
@@ -147,9 +127,8 @@ class Randomizer {
             // Определение id элемента
             val elId = if (usedId.size >= numId)
                 when (type) {
-                    0 -> addBook()
-                    1 -> addFilm()
-                    2 -> addMusic()
+                    0 -> addFilm()
+                    1 -> addMusic()
                     else -> addBook()
                 }
             else
@@ -159,14 +138,6 @@ class Randomizer {
             val check: Boolean
             when (type) {
                 0 -> {
-                    if (true) {         // TODO: Игорь проверяет, что выбранный id есть в таблице top_has_book
-                        // TODO: Игорь добавляет запись в бд (таблица top_has_book). Данные - topId, elId, place
-                        check = true    // TODO: Игорь заполняет индикатор (true - запись добавлена, false - нет)
-                        TODO()
-                    } else
-                        check = false
-                }
-                1 -> {
                     if (true) {         // TODO: Игорь проверяет, что выбранный id есть в таблице top_has_film
                         // TODO: Игорь добавляет запись в бд (таблица top_has_film). Данные - topId, elId, place
                         check = true    // TODO: Игорь заполняет индикатор (true - запись добавлена, false - нет)
@@ -174,8 +145,8 @@ class Randomizer {
                     } else
                         check = false
                 }
-                2 -> {
-                    if (true) {         // TODO: Игорь проверяет, что выбранный id есть в таблице top_has_book
+                1 -> {
+                    if (true) {         // TODO: Игорь проверяет, что выбранный id есть в таблице top_has_music
                         // TODO: Игорь добавляет запись в бд (таблица top_has_music). Данные - topId, elId, place
                         check = true    // TODO: Игорь заполняет индикатор (true - запись добавлена, false - нет)
                         TODO()
@@ -200,27 +171,39 @@ class Randomizer {
         }
     }
 
-/*    private fun randomMusicGenre(): MusicGenre {
-        // TODO: 15.04.2021 Реализовать генерацию объекта MusicGenre (неточно)
-        return MusicGenre()
-    }*/
-
     fun addUser(): User {
         // TODO: 15.04.2021 Реализовать генерацию объекта User
         return User("Teacons", "123321", "kek@gmail.com", Timestamp(Calendar.getInstance().timeInMillis))
     }
 
-/*    private fun randomBookGenre(): BookGenre {
-        // TODO: 15.04.2021 Реализовать генерацию объекта BookGenre (неточно)
-        return BookGenre(
-            "Детектив", "Детекти́вный рассказ, так же уголо́вный рассказ — " +
-                    "преимущественно литературный и кинематографический жанр, произведения которого описывают " +
-                    "процесс исследования загадочного происшествия с целью выяснения его обстоятельств и раскрытия " +
-                    "загадки. Обычно в качестве такого происшествия выступает преступление, и детектив описывает его " +
-                    "расследование и определение виновных, в таком случае конфликт строится на столкновении " +
-                    "справедливости с беззаконием, завершающемся победой справедливости."
-        )
-    }*/
+    fun fillGenre(type: Int) {  // type: 0 - фильм, 1 - музыка, 2 - книга
+        // Определение нужного файла
+        val fileName = when (type) {
+            0 -> "filmGenre.txt"
+            1 -> "musicGenre.txt"
+            else -> "bookGenre.txt"
+        }
+        val genreList = readingFile(fileName)
+
+        // Формирование данных и запись в бд
+        for (genre in genreList) {
+            val temp = genre.split('%', limit = 2)
+            val nameGenre = temp[0]
+            val descGenre = temp[1]
+
+            when (type) {
+                0 -> {
+                    // TODO: Игорь добавляет запись в бд (таблица film_genre). Данные - nameGenre, descGenre.
+                }
+                1 -> {
+                    // TODO: Игорь добавляет запись в бд (таблица music_genre). Данные - nameGenre, descGenre.
+                }
+                else -> {
+                    // TODO: Игорь добавляет запись в бд (таблица book_genre). Данные - nameGenre, descGenre.
+                }
+            }
+        }
+    }
 
     fun addBook(): Int {     // возврат - id книги
         // Генерация действующего объекта (героя) книги
@@ -250,10 +233,7 @@ class Randomizer {
 
         // Генерация года написания книги
         val year = if (peopleYear != null)
-            Random.nextInt(
-                peopleYear + 15,
-                peopleYear + 70
-            )    // год написания книги: не раньше, чем в 15 лет, и не старше, чем в 70
+            Random.nextInt(peopleYear + 15, peopleYear + 70)    // год написания книги: не раньше, чем в 15 лет, и не старше, чем в 70
         else
             Random.nextInt(1500, 2021)
 
@@ -265,6 +245,9 @@ class Randomizer {
         // TODO: Игорь заполняет таблицу book_has_people. Данные - peopleId, bookId
 
         // Заполнение кросс-таблицы book_has_book_genre
+        val genreEmpty = false  // TODO: Игорь выдирает из бд, пустая ли таблица book_genre
+        if (genreEmpty)     // Если таблица с жанрами пустая, то заполняем её
+            fillGenre(2)
         val lastIdGenre = 10 // TODO: Игорь выдирает из бд последний id жанра книг (таблица book_genre)
         val genreId = Random.nextInt(lastIdGenre + 1)
         // TODO: Игорь заполняет таблицу book_has_book_genre. Данные - bookId, genreId
@@ -274,7 +257,7 @@ class Randomizer {
 
     private fun randomBookSeries(): Int {   // возврат - id серии книг
         val exist = Random.nextBoolean()    // true - берём из бд, false - генерим новый
-        val empty = false       // TODO: Игорь выдирает из бд, пустая ли таблица
+        val empty = false       // TODO: Игорь выдирает из бд, пустая ли таблица book_series
         val id: Int
 
         if (exist && !empty) {
