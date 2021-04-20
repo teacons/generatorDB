@@ -1,3 +1,5 @@
+package ru.dbcatalog.dbcatalog
+
 import java.io.File
 import java.io.InputStream
 import java.sql.Timestamp

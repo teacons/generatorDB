@@ -1,3 +1,5 @@
+package ru.dbcatalog.dbcatalog
+
 import java.sql.Timestamp
 
 data class User(
