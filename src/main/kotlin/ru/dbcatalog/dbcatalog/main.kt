@@ -1,12 +1,16 @@
+package ru.dbcatalog.dbcatalog
+
 import org.kohsuke.args4j.Argument
 import org.kohsuke.args4j.CmdLineException
 import org.kohsuke.args4j.CmdLineParser
 import org.kohsuke.args4j.Option
-import java.util.*
 
 fun main(args: Array<String>) {
-    val launcher = Launcher()
-    launcher.launch(args.toMutableList())
+//    val launcher = ru.db_catalog.db_catalog.Launcher()
+//    launcher.launch(args.toMutableList())
+    val r = Randomizer()
+    r.addBook()
+
 }
 
 class Launcher {

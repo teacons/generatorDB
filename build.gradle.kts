@@ -17,6 +17,7 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.6.0")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.6.0")
     implementation("args4j:args4j:2.33")
+    implementation("org.postgresql:postgresql:42.2.19.jre7")
 }
 
 tasks.test {
