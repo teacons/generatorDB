@@ -13,6 +13,10 @@ class Randomizer {
     private val phraseologicalList = readingFile("phraseologicalList.txt")
     private val fullNameList = readingFile("fullNameList.txt")
     private val forWhomList = readingFile("topForWhomList.txt")
+    private val separatorList = readingFile("separatorList.txt")
+    private val placeList = readingFile("placeList.txt")
+    private val soloArtistList = readingFile("soloArtistList.txt")
+    private val groupNameList = readingFile("groupNameList.txt")
 
     private fun readingFile(name: String): List<String> {
         val uri = this.javaClass.getResource("/$name").toURI()
@@ -22,7 +26,14 @@ class Randomizer {
         return list
     }
 
-    private fun randomPeople(): Pair<Int, Int?> {    // возврат - (id, yearOfBirth)
+    private fun randomPeople(year: Int): Pair<Int, Int?> {    // возврат - (id, yearOfBirth)
+        var from = 1500
+        var until = 2005
+        if (year != -1) {
+            from = year - 80
+            until = year - 15
+        }
+
         val exist = Random.nextBoolean()    // true - берём из бд, false - генерим новый
         val empty = false           // TODO: Игорь выдирает из бд, пустая ли таблица people
         val id: Int
@@ -31,7 +42,7 @@ class Randomizer {
         if (exist && !empty) {
             val lastIdPeople = 10   // TODO: Игорь выдирает последний id из бд (таблица people)
             id = Random.nextInt(lastIdPeople + 1)
-            yearOfBirth = 1500      // TODO: Игорь выдирает year_of_birth из бд (таблица people, выбранный id)
+            yearOfBirth = from      // TODO: Игорь выдирает year_of_birth из бд (таблица people, выбранный id)
         } else {
             // Генерация имени человека
             val fullName = fullNameList.random()
@@ -39,7 +50,7 @@ class Randomizer {
             // Генерация года рождения человека
             val yearExist =
                 !(Random.nextBoolean() && Random.nextBoolean() && Random.nextBoolean() && Random.nextBoolean())
-            yearOfBirth = if (yearExist) Random.nextInt(1500, 2005) else null
+            yearOfBirth = if (yearExist) Random.nextInt(from, until) else null
 
             // Запись человека в бд (таблица people)
             val people = People(fullName, yearOfBirth)  // TODO: Игорь добавляет запись в бд (таблица people)
@@ -48,39 +59,275 @@ class Randomizer {
         return Pair(id, yearOfBirth)
     }
 
-    /* private fun randomPeopleFunction(): PeopleFunction {
-         // TODO: 15.04.2021 Реализовать генерацию объекта PeopleFunction
-         return PeopleFunction("Programmer")
-     }*/
+    private fun fillPeopleFunction() {
+        val functionList = readingFile("functionList.txt")
+        for (funcName in functionList) {
+            // TODO: Игорь добавляет funcName в бд (таблица people_function)
+        }
+     }
 
-    private fun randomMusicAlbum(): MusicAlbum {
-        // TODO: 15.04.2021 Реализовать генерацию объекта MusicAlbum
-        return MusicAlbum("Imposter of us", 2020, null)
+    private fun randomMusicAlbum(): Pair<Int, Int> {
+        val exist = Random.nextBoolean()    // true - берём из бд, false - генерим новый
+        val empty = false       // TODO: Игорь выдирает из бд, пустая ли таблица music_album
+        val id: Int
+        var yearOfAlbum: Int
+
+        if (exist && !empty) {
+            val lastIdBS = 10   // TODO: Игорь выдирает последний id из бд (таблица music_album)
+            id = Random.nextInt(lastIdBS + 1)
+            yearOfAlbum = 1500      // TODO: Игорь выдирает year_of_album из бд (таблица music_album, выбранный id)
+        } else {
+            // Генерация объекта песен альбома
+            val noun = nounList.random()
+            val withAdj = Random.nextBoolean()
+
+            // Генерация названия альбома
+            val name = if (withAdj) (adjectiveList.random() + " " + noun).capitalize()
+                       else noun.capitalize()
+
+            // Генерация постера
+            val posterExist = !(Random.nextBoolean() && Random.nextBoolean())
+            val poster = if (posterExist) "https://poster.com/" + Random.nextInt(100000, 1000000) else null
+
+            // Генерация года создания альбома
+            yearOfAlbum = Random.nextInt(1500, 2022)
+
+            // Запись альбома в бд (таблица music_album)
+            val musicAlbum = MusicAlbum(name, yearOfAlbum, poster)     // TODO: Игорь добавляет запись в бд (таблица music_album)
+            id = 0              // TODO: Игорь выдирает из бд id добавленного альбома
+        }
+        return Pair(id, yearOfAlbum)
     }
 
-    private fun randomFilmSeries(): FilmSeries {
-        // TODO: 15.04.2021 Реализовать генерацию объекта FilmSeries
-        return FilmSeries("Harry Potter", null)
+
+    private fun randomArtist(type: Int): Int {//0 - соло, 1 - группа
+        //Генерация имени для артиста
+        val nameList = when (type) {
+            0 -> soloArtistList.union(nounList)
+            else -> groupNameList
+        }
+        val name = nameList.random().capitalize()
+
+        // Генерация описания артиста
+        val descExist = !(Random.nextBoolean() && Random.nextBoolean() && Random.nextBoolean())
+        val desc = if (descExist) {
+            when (type) {
+                0 -> {"Этот исполнитель является кумиром для многих людей. " +
+                        "Место рождения исполнителя " + name + " - " + placeList.random() + ". " +
+                        "Он записал " + Random.nextInt(5, 16) +
+                        " успешных альбомов и прославился по всему миру."}
+                else -> {"Эта группа является любимой у многих людей. " +
+                        "Родина" + name + " - это " + placeList.random() + ". " +
+                        "Они записали " + Random.nextInt(5, 16) +
+                        " успешных альбомов и прославились по всему миру"}
+            }
+        }
+        else null
+
+        // TODO: Игорь добавляет запись в бд (таблица artist)
+        val id = 0  // TODO: Игорь выдирает из бд id добавленного артиста
+
+        return id
+    }
+
+    private fun randomFilmSeries(): Int {
+        val exist = Random.nextBoolean()    // true - берём из бд, false - генерим новый
+        val empty = false       // TODO: Игорь выдирает из бд, пустая ли таблица film_series
+        val id: Int
+
+        if (exist && !empty) {
+            val lastIdBS = 10   // TODO: Игорь выдирает последний id из бд (таблица film_series)
+            id = Random.nextInt(lastIdBS + 1)
+        } else {
+            // Генерация действующего объекта (героя) серии фильмов
+            val noun = nounList.random()
+
+            //Прил+Сущ и/:/-/!/. прил+сущ
+            // Генерация названия серии фильмов
+            val sep = separatorList.random()
+            val name = (adjectiveList.random() + " " + noun).capitalize() + sep + " " +
+                    if (sep.trim().compareTo("!") == 0 || sep.trim()
+                            .compareTo(".") == 0
+                    ) (adjectiveList.random() + " " + nounList.random()).capitalize()
+                    else (adjectiveList.random() + " " + nounList.random()).toLowerCase()
+
+            // Генерация описания серии фильмов
+            val descExist = !(Random.nextBoolean() && Random.nextBoolean() && Random.nextBoolean())
+            val desc = if (descExist) {
+                val adj = adjectiveList.random()
+                "Эта " + adj.substring(0, adj.length - 2) + "ая серия фильмов повествует увлекательную историю. " +
+                        (noun + " хочет " + adverbList.random() + " " + verbList.random() + "и " + verbList.random() +
+                                ", как говорится, " + phraseologicalList.random() + ".").toLowerCase().capitalize()
+            } else
+                null
+
+            // Запись серии фильмов в бд (таблица film_series)
+            val filmSeries = FilmSeries(name, desc)     // TODO: Игорь добавляет запись в бд (таблица film_series)
+            id = 0              // TODO: Игорь выдирает из бд id добавленной серии фильмов
+        }
+        return id
     }
 
     fun addFilm(): Int {
-        // TODO: 15.04.2021 Реализовать генерацию объекта Film
-        /*return Film(
-            "Зеленый слоник",
-            1999,
-            5160,
-            "Два младших офицера, сидя в одной камере на гауптвахте, вынуждены решать острые социальные и психологические вопросы в небольшом пространстве.",
-            null,
-            null,
-            null
-        )*/
-        return 0
+        // Генерация действующего объекта (героя) фильма
+        val noun = nounList.random()
+
+        //Прил+Сущ и/:/-/!/. прил+сущ
+        // Генерация названия фильма
+        val sep = separatorList.random()
+        val name = (adjectiveList.random() + " " + noun).capitalize() + sep +" "+
+                if (sep.trim().compareTo("!") == 0 || sep.trim()
+                        .compareTo(".") == 0
+                ) (adjectiveList.random() + " " + nounList.random()).capitalize()
+                else (adjectiveList.random() + " " + nounList.random()).toLowerCase()
+
+        // Генерация описания фильма
+        val desc = "Этот " + adjectiveList.random() + " фильм повествует увлекательную историю. " +
+                "Место действия данного фильма - " + placeList.random() + ". " +
+                (noun + " хочет " + adverbList.random() + " " + verbList.random() + " и " + verbList.random() +
+                        ", как говорится, " + phraseologicalList.random() + ".").toLowerCase().capitalize()
+
+        // Генерация постера
+        val posterExist = !(Random.nextBoolean() && Random.nextBoolean())
+        val poster = if (posterExist) "https://poster.com/" + Random.nextInt(100000, 1000000) else null
+
+        // Генерация продолжительности фильма
+        val duration = Random.nextInt(40, 270)
+
+        // Генерация серии фильмов
+        val filmSeriesExist = !(Random.nextBoolean() && Random.nextBoolean())
+        val filmSeriesId = if (filmSeriesExist) randomFilmSeries() else null
+
+        // Генерация книги
+        val bookExist = !(Random.nextBoolean() && Random.nextBoolean())
+        val bookId = if (bookExist) addBook() else null
+
+        // Генерация музыки
+        val musicExist = !(Random.nextBoolean() && Random.nextBoolean())
+        if (musicExist) {
+            var numOfMusic = Random.nextInt()
+            while (numOfMusic != 0){
+                val musicId = addBook()
+                // TODO: Игорь заполняет таблицу film_has_music. Данные - filmId, musicId
+                numOfMusic--
+            }
+        } else null
+
+        // Генерация года создания фильма
+        val filmYear = Random.nextInt(1895, 2022)
+
+        //Генерация съёмочной группы
+        val group = mutableListOf<Int>()
+        var groupNumber = Random.nextInt(8, 24)
+        while (groupNumber != 0){
+            val people = randomPeople(filmYear)
+            val peopleId = people.first
+            group.add(peopleId)
+            groupNumber--
+        }
+
+        // Запись фильма в бд (таблица Film)
+        val film = Film(name, filmYear, duration, desc, poster, filmSeriesId, bookId) // TODO: Игорь добавляет запись в бд (таблица film)
+        val filmId = 0  // TODO: Игорь выдирает из бд id добавленного фильма
+
+        // Заполнение кросс-таблицы film_has_people
+        val funcEmpty = false // TODO: Игорь выдирает из бд, пустая ли таблица people_function
+        if (funcEmpty)     // Если таблица с профессиями пустая, то заполняем её
+            fillPeopleFunction()
+        val lastIdFunc = 10 // TODO: Игорь выдирает из бд последний id профессии (таблица people_function)
+        groupNumber = group.size
+        while (groupNumber != 0) {
+            val funcId = Random.nextInt(lastIdFunc + 1)
+            // TODO: Игорь заполняет таблицу film_has_people. Данные - filmId, peopleId (из group), funcId
+            groupNumber--
+        }
+
+        // Заполнение кросс-таблицы film_has_film_genre
+        val genreEmpty = false  // TODO: Игорь выдирает из бд, пустая ли таблица film_genre
+        if (genreEmpty)     // Если таблица с жанрами пустая, то заполняем её
+            fillGenre(0)
+        val lastIdGenre = 10 // TODO: Игорь выдирает из бд последний id жанра фильмов (таблица film_genre)
+        val genreId = Random.nextInt(lastIdGenre + 1)
+        // TODO: Игорь заполняет таблицу film_has_film_genre. Данные - filmId, genreId
+
+        return filmId
     }
 
+
     fun addMusic(): Int {
-        // TODO: 15.04.2021 Реализовать генерацию объекта Music
-        //return Music("Believer", 2017, 203)
-        return 0
+        // Генерация объекта песни
+        val noun = nounList.random()
+
+        // Генерация названия песни
+        val name = (adjectiveList.random() + " " + adjectiveList.random() + " " + noun).capitalize()
+
+        // Генерация продолжительности песни
+        val duration = Random.nextInt(2, 15)
+
+        // Генерация альбома и года для песни
+        var musicAlbumId:Int?
+        var musicYear:Int
+        val musicAlbumExist = !(Random.nextBoolean() && Random.nextBoolean())
+        if (musicAlbumExist) {
+            val musicAlbumPair = randomMusicAlbum()
+            musicAlbumId = musicAlbumPair.first
+            musicYear = musicAlbumPair.second
+        } else {
+            musicAlbumId = null
+            musicYear = Random.nextInt(1500, 2022)
+        }
+
+        // Запись песни в бд (таблица Music)
+        val music = Music(name, musicYear, duration) // TODO: Игорь добавляет запись в бд (таблица music)
+        val musicId = 0  // TODO: Игорь выдирает из бд id добавленной песни
+
+        // Генерация исполнителей
+        when (Random.nextInt(0,3)) { //0 - соло, 1 - группа, 2 - несколько исполнителей
+            0 -> {
+                val people = randomPeople(musicYear)
+                val peopleId = people.first
+                val soloArtistId = randomArtist(0)
+                // TODO: Игорь заполняет таблицу music_has_artist. Данные - musicId, soloArtistId
+                // TODO: Игорь заполняет таблицу artist_is_people. Данные - soloArtistId, peopleId
+            }
+            1 -> {
+                val groupId = randomArtist(1)
+                val group = mutableListOf<Int>()
+                var groupNumber = Random.nextInt(2, 21)
+                while (groupNumber != 0) {
+                    val people = randomPeople(musicYear)
+                    val peopleId = people.first
+                    val memberId = randomArtist(0)
+                    group.add(memberId)
+                    groupNumber--
+                }
+                // TODO: Игорь заполняет таблицу artist_has_artist. Данные - groupId, memberId (из group)
+                // TODO: Игорь заполняет таблицу music_has_artist. Данные - musicId, groupId
+            }
+            else -> {
+                var artistNumber = Random.nextInt(2, 6)
+                val artists = mutableListOf<Int>()
+                while (artistNumber != 0) {
+                    val people = randomPeople(musicYear)
+                    val peopleId = people.first
+                    val artistId = randomArtist(0)
+                    // TODO: Игорь заполняет таблицу artist_is_people. Данные - artistId, peopleId
+                    artists.add(artistId)
+                    artistNumber--
+                }
+                // TODO: Игорь заполняет таблицу music_has_artist. Данные - musicId, artistId (из artists)
+            }
+        }
+
+        // Заполнение кросс-таблицы music_has_music_genre
+        val genreEmpty = false  // TODO: Игорь выдирает из бд, пустая ли таблица music_genre
+        if (genreEmpty)     // Если таблица с жанрами пустая, то заполняем её
+            fillGenre(1)
+        val lastIdGenre = 10 // TODO: Игорь выдирает из бд последний id жанра музыки (таблица music_genre)
+        val genreId = Random.nextInt(lastIdGenre + 1)
+        // TODO: Игорь заполняет таблицу music_has_music_genre. Данные - musicId, genreId
+
+        return musicId
     }
 
     fun addTop(type: Int = Random.nextInt(0, 3)) { // type: значение по умолчанию - без разницы (выбирается рандомно); 0 - фильм, 1 - музыка, 2 - книга
@@ -227,7 +474,7 @@ class Randomizer {
         val bookSeriesId = if (bookSeriesExist) randomBookSeries() else null
 
         // Генерация автора книги
-        val people = randomPeople()
+        val people = randomPeople(-1)
         val peopleId = people.first
         val peopleYear = people.second
 
