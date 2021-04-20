@@ -9,8 +9,7 @@ fun main(args: Array<String>) {
 //    val launcher = ru.db_catalog.db_catalog.Launcher()
 //    launcher.launch(args.toMutableList())
     val r = Randomizer()
-    r.addBook()
-
+    r.addUser()
 }
 
 class Launcher {

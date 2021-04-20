@@ -1,5 +1,6 @@
 package ru.dbcatalog.dbcatalog
 
+import org.intellij.lang.annotations.Language
 import java.sql.Timestamp
 import java.sql.Types.INTEGER
 import java.sql.Types.VARCHAR
@@ -7,6 +8,10 @@ import java.util.*
 import kotlin.random.Random
 
 class Randomizer {
+
+    enum class ContentType {
+        Film, Music, Book
+    }
 
     private val adjectiveList = readingFile("adjectiveList.txt")
     private val nounList = readingFile("nounList.txt")
@@ -175,26 +180,194 @@ class Randomizer {
         }
     }
 
-    fun addUser(): User {
-        // TODO: 15.04.2021 Реализовать генерацию объекта ru.db_catalog.db_catalog.User
-        return User("Teacons", "123321", "kek@gmail.com", Timestamp(Calendar.getInstance().timeInMillis))
+    fun addUser() {
+//      Генерация username
+
+        val userNameWordList = readingFile("forUserName.txt")
+        val stringBuilderForUserName = StringBuilder()
+        while (stringBuilderForUserName.length < 6) {
+            val word = userNameWordList.random()
+            if (stringBuilderForUserName.length + word.length < 20)
+                stringBuilderForUserName.append(word)
+            else
+                break
+        }
+        val userName = stringBuilderForUserName.toString()
+
+//      Генерация password
+
+        val alphabet = ('0'..'9').joinToString("") +
+                ('a'..'z').joinToString("") +
+                ('A'..'Z').joinToString("") +
+                "!@#$%&"
+
+        val stringBuilderForPassword = StringBuilder()
+
+        while (stringBuilderForPassword.length < Random.nextInt(6, 32)) {
+            stringBuilderForPassword.append(alphabet.random())
+        }
+
+        val password = stringBuilderForPassword.toString()
+
+//      Генерация email
+
+        val emailSamples = readingFile("forEmail.txt")
+
+        val email = userName + emailSamples.random()
+
+//      Генерация TimeStamp
+
+        val timestamp = generateTimestamp()
+
+//      Добавление в БД записи о пользователе
+
+        @Language("PostgreSQL")
+        val sqlQuery = "INSERT INTO db.user (username, password, email, create_time) VALUES (?, ?, ?, ?) RETURNING id;"
+        val statementForAddUserEntry = db.getConnect().prepareStatement(sqlQuery).apply {
+            setString(1, userName)
+            setString(2, password)
+            setString(3, email)
+            setTimestamp(4, timestamp)
+        }
+
+        val userId = db.query(statementForAddUserEntry)[0]["id"] as Int
+
+//      Генерация любимых жанров пользователя
+
+//        generateUsersGenres(userId, ContentType.Music)
+        generateUsersGenres(userId, ContentType.Book)
+//        generateUsersGenres(userId, ContentType.Film)
+
+//      Генерация просмотренного пользователем контента
+
+//        generateUsersViewedContent(userId, ContentType.Music)
+        generateUsersViewedContent(userId, ContentType.Book)
+//        generateUsersViewedContent(userId, ContentType.Film)
     }
 
-    private fun fillGenre(type: Int) {  // type: 0 - фильм, 1 - музыка, else - книга
+    private fun generateUsersViewedContent(userId: Int, contentType: ContentType) {
+        var listOfContentIds = getContentIdsByType(contentType)
+
+        if (listOfContentIds.isEmpty()) {
+            when (contentType) {
+                ContentType.Music -> for (i in 1..5) addMusic()
+                ContentType.Book -> for (i in 1..5) addBook()
+                ContentType.Film -> for (i in 1..5) addFilm()
+            }
+            listOfContentIds = getGenresIdsByType(contentType)
+        }
+
+        //      Рандомное добавление просмотренного контента в БД
+        for (i in 1..Random.nextInt(5, listOfContentIds.size / 2)) {
+
+            @Language("PostgreSQL")
+            val insertQuery = when (contentType) {
+                ContentType.Music -> "INSERT INTO db.user_viewed_music (user_id, music_id, rating, time) VALUES (?, ?, ?, ?);"
+                ContentType.Book -> "INSERT INTO db.user_viewed_book (user_id, book_id, rating, time) VALUES (?, ?, ?, ?);"
+                ContentType.Film -> "INSERT INTO db.user_viewed_film (user_id, film_id, rating, time) VALUES (?, ?, ?, ?);"
+            }
+
+            val randomId = listOfContentIds.random()
+            listOfContentIds.remove(randomId)
+
+            db.query(db.getConnect().prepareStatement(insertQuery).apply {
+                setInt(1, userId)
+                setInt(2, randomId)
+                if (Random.nextBoolean())
+                    setInt(3, Random.nextInt(1, 5))
+                else
+                    setNull(3, INTEGER)
+                setTimestamp(4, generateTimestamp())
+            })
+        }
+    }
+
+    private fun getContentIdsByType(contentType: ContentType): MutableList<Int> {
+        val listOfContentIds = mutableListOf<Int>()
+
+        @Language("PostgreSQL")
+        val selectQuery = when (contentType) {
+            ContentType.Music -> "SELECT id FROM db.music;"
+            ContentType.Book -> "SELECT id FROM db.book;"
+            ContentType.Film -> "SELECT id FROM db.film;"
+        }
+        db.query(db.getConnect().prepareStatement(selectQuery)).onEach { listOfContentIds.add(it["id"] as Int) }
+
+        return listOfContentIds
+    }
+
+    private fun generateTimestamp(): Timestamp {
+        return if (Random.nextBoolean()) {
+            Timestamp(Calendar.getInstance().timeInMillis)
+        } else {
+            val timeFrom = Calendar.getInstance().apply { set(2010, 0, 1) }.timeInMillis
+            val timeTo = Calendar.getInstance().timeInMillis
+            Timestamp(Random.nextLong(timeFrom, timeTo))
+        }
+    }
+
+    private fun generateUsersGenres(userId: Int, contentType: ContentType) {
+        var listOfGenreIds = getGenresIdsByType(contentType)
+
+//      Проверка наличия жанров в списке из БД
+        if (listOfGenreIds.isEmpty()) {
+            fillGenre(contentType)
+            listOfGenreIds = getGenresIdsByType(contentType)
+        }
+
+//      Рандомное добавление жанров в БД
+        for (i in 1..Random.nextInt(5, listOfGenreIds.size / 2)) {
+
+            @Language("PostgreSQL")
+            val query = when (contentType) {
+                ContentType.Music -> "INSERT INTO db.user_likes_music_genre (user_id, music_genre_id) VALUES (?, ?);"
+                ContentType.Book -> "INSERT INTO db.user_likes_book_genre (user_id, book_genre_id) VALUES (?, ?);"
+                ContentType.Film -> "INSERT INTO db.user_likes_film_genre (user_id, film_genre_id) VALUES (?, ?);"
+            }
+
+            val randomId = listOfGenreIds.random()
+            listOfGenreIds.remove(randomId)
+
+            db.query(db.getConnect().prepareStatement(query).apply {
+                setInt(1, userId)
+                setInt(2, randomId)
+            })
+        }
+    }
+
+    private fun getGenresIdsByType(contentType: ContentType): MutableList<Int> {
+        val listOfGenreIds = mutableListOf<Int>()
+
+        @Language("PostgreSQL")
+        val sqlQuery = when (contentType) {
+            ContentType.Music -> "SELECT id FROM db.music_genre;"
+            ContentType.Book -> "SELECT id FROM db.book_genre;"
+            ContentType.Film -> "SELECT id FROM db.film_genre;"
+        }
+//      Заполнение списка id жанров
+        db.query(db.getConnect().prepareStatement(sqlQuery)).onEach { listOfGenreIds.add(it["id"] as Int) }
+
+        return listOfGenreIds
+    }
+
+    private fun fillGenre(contentType: ContentType) {  // type: 0 - фильм, 1 - музыка, else - книга
         // Определение нужного файла и выражения для работы с бд
         val fileName: String
         val stateForInsert: String
-        when (type) {
-            0 -> {
+        when (contentType) {
+            ContentType.Film -> {
                 fileName = "filmGenre.txt"
+                //language=PostgreSQL
                 stateForInsert = "INSERT INTO db.film_genre (name, description) VALUES (?, ?);"
             }
-            1 -> {
+            ContentType.Music -> {
                 fileName = "musicGenre.txt"
+                //language=PostgreSQL
                 stateForInsert = "INSERT INTO db.music_genre (name, description) VALUES (?, ?);"
             }
-            else -> {
+            ContentType.Book -> {
                 fileName = "bookGenre.txt"
+                //language=PostgreSQL
                 stateForInsert = "INSERT INTO db.book_genre (name, description) VALUES (?, ?);"
             }
         }
@@ -290,12 +463,11 @@ class Randomizer {
         }
 
         // Подготовка данных для заполнения кросс-таблицы book_has_book_genre
-        val genreIds = mutableListOf<Int>()     // список id жанров
-        db.query(db.getConnect().prepareStatement("SELECT id FROM db.book_genre;")).onEach { genreIds.add(it["id"] as Int) }
+        var genreIds = getGenresIdsByType(ContentType.Book)   // список id жанров Я СДЕЛАЛЬ
 
-        if (genreIds.size == 0) {     // Если таблица с жанрами пустая, то заполняем её
-            fillGenre(2)
-            db.query(db.getConnect().prepareStatement("SELECT id FROM db.book_genre;")).onEach { genreIds.add(it["id"] as Int) }
+        if (genreIds.isEmpty()) {     // Если таблица с жанрами пустая, то заполняем её
+            fillGenre(ContentType.Book)
+            genreIds = getGenresIdsByType(ContentType.Book)
         }
 
         // Генерация количества жанров (от 1 до 5, но не больше, чем есть жанров)
