@@ -43,9 +43,10 @@ class Randomizer {
         val duration = Random.nextInt(2, 15)
 
         // Генерация альбома и года для песни
-        var musicAlbumId: Int?
-        var musicYear: Int
+        val musicAlbumId: Int?
+        val musicYear: Int
         val musicAlbumExist = !(Random.nextBoolean() && Random.nextBoolean())
+
         if (musicAlbumExist) {
             val musicAlbumPair = randomSeriesByType(ContentType.Music)
             musicAlbumId = musicAlbumPair.first
@@ -55,33 +56,33 @@ class Randomizer {
             musicYear = Random.nextInt(1500, 2022)
         }
 
-        // Запись песни в бд (таблица Music)
-        val music = Music(name, musicYear, duration) // TODO: Игорь добавляет запись в бд (таблица music)
-
+        // Запись песни в бд (таблица Music) и получение её id
         @Language("PostgreSQL")
-        val query = "INSERT INTO db.music (name, year, duration) VALUES (?, ?, ?) RETURNING id;"
+        var query = "INSERT INTO db.music (name, year, duration) VALUES (?, ?, ?) RETURNING id;"
         val musicId = db.query(db.getConnect().prepareStatement(query).apply {
             setString(1, name)
             setInt(2, musicYear)
             setInt(3, duration)
-        })[0]["id"] as Int  // TODO: Игорь выдирает из бд id добавленной песни
+        })[0]["id"] as Int
 
-        // Генерация исполнителей
+        // TODO: Где работа с таблицей music_has_album?
+
+        // Генерация исполнителей   // TODO: как-нибудь упростить? Например, во всех ветках происходит работа с music_has_artist
         when (Random.nextInt(0, 3)) { //0 - соло, 1 - группа, 2 - несколько исполнителей
             0 -> {
                 val peopleId = randomPeople(musicYear)
                 val soloArtistId = randomArtist(0)
                 // TODO: Игорь заполняет таблицу music_has_artist. Данные - musicId, soloArtistId
                 @Language("PostgreSQL")
-                var query = "INSERT INTO db.music_has_artist (music_id, artist_id) VALUES (?, ?);"
+                query = "INSERT INTO db.music_has_artist (music_id, artist_id) VALUES (?, ?);"
                 db.query(db.getConnect().prepareStatement(query).apply {
                     setInt(1, musicId)
                     setInt(2, soloArtistId)
                 })
                 // TODO: Игорь заполняет таблицу artist_is_people. Данные - soloArtistId, peopleId
                 @Language("PostgreSQL")
-                val query1 = "INSERT INTO db.artist_is_people (artist_id, people_id) VALUES (?, ?);"
-                db.query(db.getConnect().prepareStatement(query1).apply {
+                query = "INSERT INTO db.artist_is_people (artist_id, people_id) VALUES (?, ?);"
+                db.query(db.getConnect().prepareStatement(query).apply {
                     setInt(1, soloArtistId)
                     setInt(2, peopleId)
                 })
@@ -98,15 +99,15 @@ class Randomizer {
                 }
                 // TODO: Игорь заполняет таблицу artist_has_artist. Данные - groupId, memberId (из group)
                 @Language("PostgreSQL")
-                var query = "INSERT INTO db.artist_has_artist (artist_group_id, artist_id) VALUES (?, ?);"
+                query = "INSERT INTO db.artist_has_artist (artist_group_id, artist_id) VALUES (?, ?);"
                 db.query(db.getConnect().prepareStatement(query).apply {
                     setInt(1, groupId)
 //                    setInt(2, )
                 })
                 // TODO: Игорь заполняет таблицу music_has_artist. Данные - musicId, groupId
                 @Language("PostgreSQL")
-                var query1 = "INSERT INTO db.music_has_artist (music_id, artist_id) VALUES (?, ?);"
-                db.query(db.getConnect().prepareStatement(query1).apply {
+                query = "INSERT INTO db.music_has_artist (music_id, artist_id) VALUES (?, ?);"
+                db.query(db.getConnect().prepareStatement(query).apply {
                     setInt(1, musicId)
                     setInt(2, groupId)
                 })
@@ -119,7 +120,7 @@ class Randomizer {
                     val artistId = randomArtist(0)
                     // TODO: Игорь заполняет таблицу artist_is_people. Данные - artistId, peopleId
                     @Language("PostgreSQL")
-                    val query = "INSERT INTO db.artist_is_people (artist_id, people_id) VALUES (?, ?);"
+                    query = "INSERT INTO db.artist_is_people (artist_id, people_id) VALUES (?, ?);"
                     db.query(db.getConnect().prepareStatement(query).apply {
                         setInt(1, artistId)
                         setInt(2, peopleId)
@@ -129,28 +130,22 @@ class Randomizer {
                 }
                 // TODO: Игорь заполняет таблицу music_has_artist. Данные - musicId, artistId (из artists)
                 @Language("PostgreSQL")
-                var query1 = "INSERT INTO db.music_has_artist (music_id, artist_id) VALUES (?, ?);"
-                db.query(db.getConnect().prepareStatement(query1).apply {
+                query = "INSERT INTO db.music_has_artist (music_id, artist_id) VALUES (?, ?);"
+                db.query(db.getConnect().prepareStatement(query).apply {
                     setInt(1, musicId)
 //                    setInt(2, art)
                 })
             }
         }
 
+        // Генерация id жанра для песни     // TODO: У песни может быть несколько жанров
+        val genreIds = getGenresIdsByType(ContentType.Music)    // список id жанров
+        val genreId = genreIds.random()
+
         // Заполнение кросс-таблицы music_has_music_genre
-        val genreEmpty = db.query(
-            db.getConnect().prepareStatement("SELECT count(*) AS rowcount FROM db.music_genre;")
-        )[0]["rowcount"] as Long == 0L  // TODO: Игорь выдирает из бд, пустая ли таблица music_genre
-        if (genreEmpty)     // Если таблица с жанрами пустая, то заполняем её
-            fillGenre(ContentType.Music)
-        val lastIdGenre = db.query(
-            db.getConnect().prepareStatement("SELECT max(id) FROM db.music_genre;")
-        )[0]["max"] as Int // TODO: Игорь выдирает из бд последний id жанра музыки (таблица music_genre)
-        val genreId = Random.nextInt(lastIdGenre + 1)
-        // TODO: Игорь заполняет таблицу music_has_music_genre. Данные - musicId, genreId
         @Language("PostgreSQL")
-        val q = "INSERT INTO db.music_has_music_genre (music_id, music_genre_id) VALUES (?, ?);"
-        db.query(db.getConnect().prepareStatement(q).apply {
+        query = "INSERT INTO db.music_has_music_genre (music_id, music_genre_id) VALUES (?, ?);"
+        db.query(db.getConnect().prepareStatement(query).apply {
             setInt(1, musicId)
             setInt(1, genreId)
         })
@@ -170,19 +165,19 @@ class Randomizer {
         val descExist = !(Random.nextBoolean() && Random.nextBoolean() && Random.nextBoolean())
         val desc = getDescArtist(type)
 
-        // TODO: Игорь добавляет запись в бд (таблица artist)
-
+        // Добавление записи об артисте в бд (иаблица artist) и получение её id
         @Language("PostgreSQL")
-        val query = "INSERT INTO db.artist (name, description) VALUES (?, ?) RETURNING id;"
-        val id = db.query(db.getConnect().prepareStatement(query).apply {
-            setString(1, name)
-            if (descExist)
-                setString(2, desc)
-            else
-                setNull(2, VARCHAR)
-        })[0]["id"] as Int  // TODO: Игорь выдирает из бд id добавленного артиста
+        val query =
+            db.getConnect().prepareStatement("INSERT INTO db.artist (name, description) VALUES (?, ?) RETURNING id;")
+                .apply {
+                    setString(1, name)
+                    if (descExist)
+                        setString(2, desc)
+                    else
+                        setNull(2, VARCHAR)
+                }
 
-        return id
+        return db.query(query)[0]["id"] as Int
     }
 
     /** =================================    ФИЛЬМ И ВСЁ, ЧТО С НИМ СВЯЗАНО    ================================ **/
@@ -220,17 +215,7 @@ class Randomizer {
             groupNumber--
         }
 
-        // Запись фильма в бд (таблица Film)
-        val film = Film(
-            name,
-            filmYear,
-            duration,
-            desc,
-            poster,
-            filmSeriesId,
-            bookId
-        ) // TODO: Игорь добавляет запись в бд (таблица film)
-
+        // Добавление записи о фильме в бд (таблица film) и получение его id
         @Language("PostgreSQL")
         val filmQuery =
             "INSERT INTO db.film (name, year, duration, description, poster, film_series_id, book_id) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id;"
@@ -251,15 +236,17 @@ class Randomizer {
                 setInt(7, bookId!!)
             else
                 setNull(7, INTEGER)
-        })[0]["id"] as Int  // TODO: Игорь выдирает из бд id добавленного фильма
+        })[0]["id"] as Int
 
         // Генерация музыки
         val musicExist = !(Random.nextBoolean() && Random.nextBoolean())
         if (musicExist) {
             var numOfMusic = Random.nextInt()
+
             while (numOfMusic != 0) {
-                val musicId = addBook()
-                // TODO: Игорь заполняет таблицу film_has_music. Данные - filmId, musicId
+                val musicId = addMusic()    // TODO: было написано musicId = addBook(). Корректно ли исправление?
+
+                // Заполнение кросс-таблицы film_has_music
                 @Language("PostgreSQL")
                 val query = "INSERT INTO db.film_has_music (film_id, music_id) VALUES (?, ?);"
                 db.query(db.getConnect().prepareStatement(query).apply {
@@ -268,42 +255,40 @@ class Randomizer {
                 })
                 numOfMusic--
             }
-        } else null
+        }
 
-        // Заполнение кросс-таблицы film_has_people
-        val funcEmpty = db.query(
-            db.getConnect().prepareStatement("SELECT count(*) AS rowcount FROM db.people_function;")
-        )[0]["rowcount"] as Long == 0L // TODO: Игорь выдирает из бд, пустая ли таблица people_function
-        if (funcEmpty)     // Если таблица с профессиями пустая, то заполняем её
+        // Получение списка существующих id в таблице people_function
+        val funcIds = mutableListOf<Int>()
+        db.query(db.getConnect().prepareStatement("SELECT id FROM db.people_function;"))
+            .onEach { funcIds.add(it["id"] as Int) }
+
+        // Если таблица с профессиями пустая, то заполняем её и повторно заполняем список
+        if (funcIds.isEmpty()) {
             fillPeopleFunction()
-        val lastIdFunc = db.query(
-            db.getConnect().prepareStatement("SELECT max(id) FROM db.people_function;")
-        )[0]["max"] as Int // TODO: Игорь выдирает из бд последний id профессии (таблица people_function)
-        groupNumber = group.size
-        while (groupNumber != 0) {
-            val funcId = Random.nextInt(lastIdFunc + 1)
+            db.query(db.getConnect().prepareStatement("SELECT id FROM db.people_function;"))
+                .onEach { funcIds.add(it["id"] as Int) }
+        }
+
+        for (peopleIdInGroup in group) {
+            val funcId = funcIds.random()
+
+            // Заполнение кросс-таблицы film_has_people
             // TODO: Игорь заполняет таблицу film_has_people. Данные - filmId, peopleId (из group), funcId
             @Language("PostgreSQL")
             val query = "INSERT INTO db.film_has_people (film_id, people_id, people_function_id) VALUES (?, ?, ?);"
             db.query(db.getConnect().prepareStatement(query).apply {
                 setInt(1, filmId)
-//                setInt(2, pe)
+                setInt(2, peopleIdInGroup)  // TODO: это ли подразумевалось под peopleId (из group)?
                 setInt(3, funcId)
             })
-            groupNumber--
+
         }
 
+        // Генерация id жанра для фильма   // TODO: У фильма может быть несколько жанров
+        val genreIds = getGenresIdsByType(ContentType.Film)
+        val genreId = genreIds.random()
+
         // Заполнение кросс-таблицы film_has_film_genre
-        val genreEmpty = db.query(
-            db.getConnect().prepareStatement("SELECT count(*) AS rowcount FROM db.film_genre;")
-        )[0]["rowcount"] as Long == 0L  // TODO: Игорь выдирает из бд, пустая ли таблица film_genre
-        if (genreEmpty)     // Если таблица с жанрами пустая, то заполняем её
-            fillGenre(ContentType.Film)
-        val lastIdGenre = db.query(
-            db.getConnect().prepareStatement("SELECT max(id) FROM db.film_genre;")
-        )[0]["max"] as Int // TODO: Игорь выдирает из бд последний id жанра фильмов (таблица film_genre)
-        val genreId = Random.nextInt(lastIdGenre + 1)
-        // TODO: Игорь заполняет таблицу film_has_film_genre. Данные - filmId, genreId
         @Language("PostgreSQL")
         val query = "INSERT INTO db.film_has_film_genre (film_id, film_genre_id) VALUES (?, ?);"
         db.query(db.getConnect().prepareStatement(query).apply {
@@ -384,12 +369,7 @@ class Randomizer {
         }
 
         // Подготовка данных для заполнения кросс-таблицы book_has_book_genre
-        var genreIds = getGenresIdsByType(ContentType.Book)   // список id жанров Я СДЕЛАЛЬ
-
-        if (genreIds.isEmpty()) {     // Если таблица с жанрами пустая, то заполняем её
-            fillGenre(ContentType.Book)
-            genreIds = getGenresIdsByType(ContentType.Book)
-        }
+        val genreIds = getGenresIdsByType(ContentType.Book)   // список id жанров
 
         // Генерация количества жанров (от 1 до 5, но не больше, чем есть жанров)
         val genreNum = Random.nextInt(1, minOf(genreIds.size, 5) + 1)
@@ -450,7 +430,8 @@ class Randomizer {
         // Заполнение соответствующей кросс-таблицы
         // Получаем список доступных id в соответствующей таблице (film, music, book)
         val availableIds = mutableListOf<Int>()
-        db.query(db.getConnect().prepareStatement("SELECT id FROM db.$table;")).onEach { availableIds.add(it["id"] as Int) }
+        db.query(db.getConnect().prepareStatement("SELECT id FROM db.$table;"))
+            .onEach { availableIds.add(it["id"] as Int) }
 
         while (num != 0) {
             // Определение id элемента
@@ -564,15 +545,18 @@ class Randomizer {
             val randomId = listOfContentIds.random()
             listOfContentIds.remove(randomId)
 
-            db.query(db.getConnect().prepareStatement("INSERT INTO db.user_viewed_$table (user_id, ${table}_id, rating, time) VALUES (?, ?, ?, ?);").apply {
-                setInt(1, userId)
-                setInt(2, randomId)
-                if (Random.nextBoolean())
-                    setInt(3, Random.nextInt(1, 5))
-                else
-                    setNull(3, INTEGER)
-                setTimestamp(4, generateTimestamp())
-            })
+            db.query(
+                db.getConnect()
+                    .prepareStatement("INSERT INTO db.user_viewed_$table (user_id, ${table}_id, rating, time) VALUES (?, ?, ?, ?);")
+                    .apply {
+                        setInt(1, userId)
+                        setInt(2, randomId)
+                        if (Random.nextBoolean())
+                            setInt(3, Random.nextInt(1, 5))
+                        else
+                            setNull(3, INTEGER)
+                        setTimestamp(4, generateTimestamp())
+                    })
         }
     }
 
@@ -584,7 +568,8 @@ class Randomizer {
             ContentType.Book -> "db.book"
             ContentType.Film -> "db.film"
         }
-        db.query(db.getConnect().prepareStatement("SELECT id FROM $table;")).onEach { listOfContentIds.add(it["id"] as Int) }
+        db.query(db.getConnect().prepareStatement("SELECT id FROM $table;"))
+            .onEach { listOfContentIds.add(it["id"] as Int) }
 
         return listOfContentIds
     }
@@ -620,10 +605,12 @@ class Randomizer {
             val randomId = listOfGenreIds.random()
             listOfGenreIds.remove(randomId)
 
-            db.query(db.getConnect().prepareStatement("INSERT INTO db.user_likes_$table (user_id, ${table}_id) VALUES (?, ?);").apply {
-                setInt(1, userId)
-                setInt(2, randomId)
-            })
+            db.query(
+                db.getConnect()
+                    .prepareStatement("INSERT INTO db.user_likes_$table (user_id, ${table}_id) VALUES (?, ?);").apply {
+                        setInt(1, userId)
+                        setInt(2, randomId)
+                    })
         }
     }
 
@@ -751,7 +738,15 @@ class Randomizer {
             ContentType.Film -> "db.film_genre"
         }
         // Заполнение списка id жанров
-        db.query(db.getConnect().prepareStatement("SELECT id FROM $table;")).onEach { listOfGenreIds.add(it["id"] as Int) }
+        db.query(db.getConnect().prepareStatement("SELECT id FROM $table;"))
+            .onEach { listOfGenreIds.add(it["id"] as Int) }
+
+        // Если соответствующая таблица в бд не заполнена, заполняем её и список
+        if (listOfGenreIds.isEmpty()) {
+            fillGenre(contentType)
+            db.query(db.getConnect().prepareStatement("SELECT id FROM $table;"))
+                .onEach { listOfGenreIds.add(it["id"] as Int) }
+        }
 
         return listOfGenreIds
     }
