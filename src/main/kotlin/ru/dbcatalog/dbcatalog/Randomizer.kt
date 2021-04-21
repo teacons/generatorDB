@@ -167,7 +167,7 @@ class Randomizer {
 
         // Добавление записи об артисте в бд (иаблица artist) и получение её id
         @Language("PostgreSQL")
-        val query =
+        val statement =
             db.getConnect().prepareStatement("INSERT INTO db.artist (name, description) VALUES (?, ?) RETURNING id;")
                 .apply {
                     setString(1, name)
@@ -177,7 +177,7 @@ class Randomizer {
                         setNull(2, VARCHAR)
                 }
 
-        return db.query(query)[0]["id"] as Int
+        return db.query(statement)[0]["id"] as Int
     }
 
     /** =================================    ФИЛЬМ И ВСЁ, ЧТО С НИМ СВЯЗАНО    ================================ **/
@@ -397,20 +397,30 @@ class Randomizer {
         // type: значение по умолчанию - без разницы (выбирается рандомно); 0 - фильм, 1 - музыка, 2 - книга
         // Подготовка данных
         val noun: String
-        val table: String             // таблица для общения с бд
+        val queryForIds: String             // query для получения id в film/music/book
+        val queryForInsertInoCross: String  // query для записи в top_has_film / top_has_music / top_has_book
 
         when (type) {
             0 -> {
                 noun = "фильмов"
-                table = "film"
+                //language=PostgreSQL
+                queryForIds = "SELECT id FROM db.film;"
+                //language=PostgreSQL
+                queryForInsertInoCross = "INSERT INTO db.top_has_film (top_id, film_id, position) VALUES (?, ?, ?);"
             }
             1 -> {
                 noun = "песен"
-                table = "music"
+                //language=PostgreSQL
+                queryForIds = "SELECT id FROM db.music;"
+                //language=PostgreSQL
+                queryForInsertInoCross = "INSERT INTO db.top_has_music (top_id, music_id, position) VALUES (?, ?, ?);"
             }
             else -> {
                 noun = "книг"
-                table = "book"
+                //language=PostgreSQL
+                queryForIds = "SELECT id FROM db.book;"
+                //language=PostgreSQL
+                queryForInsertInoCross = "INSERT INTO db.top_has_book (top_id, book_id, position) VALUES (?, ?, ?);"
             }
         }
 
@@ -430,8 +440,7 @@ class Randomizer {
         // Заполнение соответствующей кросс-таблицы
         // Получаем список доступных id в соответствующей таблице (film, music, book)
         val availableIds = mutableListOf<Int>()
-        db.query(db.getConnect().prepareStatement("SELECT id FROM db.$table;"))
-            .onEach { availableIds.add(it["id"] as Int) }
+        db.query(db.getConnect().prepareStatement(queryForIds)).onEach { availableIds.add(it["id"] as Int) }
 
         while (num != 0) {
             // Определение id элемента
@@ -447,7 +456,7 @@ class Randomizer {
             // Запись в нужную таблицу в бд
             db.query(
                 db.getConnect()
-                    .prepareStatement("INSERT INTO db.top_has_$table (top_id, ${table}_id, position) VALUES (?, ?, ?);")
+                    .prepareStatement(queryForInsertInoCross)
                     .apply {
                         setInt(1, topId)
                         setInt(2, elId)
@@ -536,40 +545,38 @@ class Randomizer {
         //      Рандомное добавление просмотренного контента в БД
         for (i in 1..Random.nextInt(5, listOfContentIds.size / 2)) {
 
-            val table = when (contentType) {
-                ContentType.Music -> "music"
-                ContentType.Book -> "book"
-                ContentType.Film -> "film"
+            @Language("PostgreSQL")
+            val insertQuery = when (contentType) {
+                ContentType.Music -> "INSERT INTO db.user_viewed_music (user_id, music_id, rating, time) VALUES (?, ?, ?, ?);"
+                ContentType.Book -> "INSERT INTO db.user_viewed_book (user_id, book_id, rating, time) VALUES (?, ?, ?, ?);"
+                ContentType.Film -> "INSERT INTO db.user_viewed_film (user_id, film_id, rating, time) VALUES (?, ?, ?, ?);"
             }
 
             val randomId = listOfContentIds.random()
             listOfContentIds.remove(randomId)
 
-            db.query(
-                db.getConnect()
-                    .prepareStatement("INSERT INTO db.user_viewed_$table (user_id, ${table}_id, rating, time) VALUES (?, ?, ?, ?);")
-                    .apply {
-                        setInt(1, userId)
-                        setInt(2, randomId)
-                        if (Random.nextBoolean())
-                            setInt(3, Random.nextInt(1, 5))
-                        else
-                            setNull(3, INTEGER)
-                        setTimestamp(4, generateTimestamp())
-                    })
+            db.query(db.getConnect().prepareStatement(insertQuery).apply {
+                setInt(1, userId)
+                setInt(2, randomId)
+                if (Random.nextBoolean())
+                    setInt(3, Random.nextInt(1, 5))
+                else
+                    setNull(3, INTEGER)
+                setTimestamp(4, generateTimestamp())
+            })
         }
     }
 
     private fun getContentIdsByType(contentType: ContentType): MutableList<Int> {
         val listOfContentIds = mutableListOf<Int>()
 
-        val table = when (contentType) {
-            ContentType.Music -> "db.music"
-            ContentType.Book -> "db.book"
-            ContentType.Film -> "db.film"
+        @Language("PostgreSQL")
+        val selectQuery = when (contentType) {
+            ContentType.Music -> "SELECT id FROM db.music;"
+            ContentType.Book -> "SELECT id FROM db.book;"
+            ContentType.Film -> "SELECT id FROM db.film;"
         }
-        db.query(db.getConnect().prepareStatement("SELECT id FROM $table;"))
-            .onEach { listOfContentIds.add(it["id"] as Int) }
+        db.query(db.getConnect().prepareStatement(selectQuery)).onEach { listOfContentIds.add(it["id"] as Int) }
 
         return listOfContentIds
     }
@@ -596,21 +603,20 @@ class Randomizer {
         // Рандомное добавление жанров в БД
         for (i in 1..Random.nextInt(5, listOfGenreIds.size / 2)) {
 
-            val table = when (contentType) {
-                ContentType.Music -> "music_genre"
-                ContentType.Book -> "book_genre"
-                ContentType.Film -> "film_genre"
+            @Language("PostgreSQL")
+            val query = when (contentType) {
+                ContentType.Music -> "INSERT INTO db.user_likes_music_genre (user_id, music_genre_id) VALUES (?, ?);"
+                ContentType.Book -> "INSERT INTO db.user_likes_book_genre (user_id, book_genre_id) VALUES (?, ?);"
+                ContentType.Film -> "INSERT INTO db.user_likes_film_genre (user_id, film_genre_id) VALUES (?, ?);"
             }
 
             val randomId = listOfGenreIds.random()
             listOfGenreIds.remove(randomId)
 
-            db.query(
-                db.getConnect()
-                    .prepareStatement("INSERT INTO db.user_likes_$table (user_id, ${table}_id) VALUES (?, ?);").apply {
-                        setInt(1, userId)
-                        setInt(2, randomId)
-                    })
+            db.query(db.getConnect().prepareStatement(query).apply {
+                setInt(1, userId)
+                setInt(2, randomId)
+            })
         }
     }
 
@@ -691,19 +697,22 @@ class Randomizer {
     private fun fillGenre(contentType: ContentType) {
         // Определение нужного файла и выражения для работы с бд
         val fileName: String
-        val table: String
+        val queryForInsert: String
         when (contentType) {
             ContentType.Film -> {
                 fileName = "filmGenre.txt"
-                table = "db.film_genre"
+                //language=PostgreSQL
+                queryForInsert = "INSERT INTO db.film_genre (name, description) VALUES (?, ?);"
             }
             ContentType.Music -> {
                 fileName = "musicGenre.txt"
-                table = "db.music_genre"
+                //language=PostgreSQL
+                queryForInsert = "INSERT INTO db.music_genre (name, description) VALUES (?, ?);"
             }
             ContentType.Book -> {
                 fileName = "bookGenre.txt"
-                table = "db.book_genre"
+                //language=PostgreSQL
+                queryForInsert = "INSERT INTO db.book_genre (name, description) VALUES (?, ?);"
             }
         }
         val genreList = readingFile(fileName)
@@ -714,15 +723,13 @@ class Randomizer {
             val nameGenre = temp[0]
             val descGenre = temp.getOrNull(1)
 
-            val statement =
-                db.getConnect().prepareStatement("INSERT INTO $table (name, description) VALUES (?, ?);")
-                    .apply {
-                        setString(1, nameGenre)
-                        if (descGenre == null || descGenre == "")
-                            setNull(2, VARCHAR)
-                        else
-                            setString(2, descGenre)
-                    }
+            val statement = db.getConnect().prepareStatement(queryForInsert).apply {
+                setString(1, nameGenre)
+                if (descGenre == null || descGenre == "")
+                    setNull(2, VARCHAR)
+                else
+                    setString(2, descGenre)
+            }
             db.query(statement)
         }
     }
@@ -732,20 +739,19 @@ class Randomizer {
     private fun getGenresIdsByType(contentType: ContentType): MutableList<Int> {
         val listOfGenreIds = mutableListOf<Int>()
 
-        val table = when (contentType) {
-            ContentType.Music -> "db.music_genre"
-            ContentType.Book -> "db.book_genre"
-            ContentType.Film -> "db.film_genre"
+        @Language("PostgreSQL")
+        val sqlQuery = when (contentType) {
+            ContentType.Music -> "SELECT id FROM db.music_genre;"
+            ContentType.Book -> "SELECT id FROM db.book_genre;"
+            ContentType.Film -> "SELECT id FROM db.film_genre;"
         }
         // Заполнение списка id жанров
-        db.query(db.getConnect().prepareStatement("SELECT id FROM $table;"))
-            .onEach { listOfGenreIds.add(it["id"] as Int) }
+        db.query(db.getConnect().prepareStatement(sqlQuery)).onEach { listOfGenreIds.add(it["id"] as Int) }
 
         // Если соответствующая таблица в бд не заполнена, заполняем её и список
         if (listOfGenreIds.isEmpty()) {
             fillGenre(contentType)
-            db.query(db.getConnect().prepareStatement("SELECT id FROM $table;"))
-                .onEach { listOfGenreIds.add(it["id"] as Int) }
+            db.query(db.getConnect().prepareStatement(sqlQuery)).onEach { listOfGenreIds.add(it["id"] as Int) }
         }
 
         return listOfGenreIds
@@ -889,10 +895,26 @@ class Randomizer {
      *      MUSIC - генерация и запись в бд музыкального альбома. На выходе - пара (id, year).
      *  Возврат - пара (id_сгенерированной_серии, null / год_музыкального_альбома). **/
     private fun randomSeriesByType(contentType: ContentType): Pair<Int, Int?> {   // возврат - id интересующей серии
-        val table = when (contentType) {
-            ContentType.Film -> "db.film_series"
-            ContentType.Book -> "db.book_series"
-            ContentType.Music -> "db.music_album"
+        val queryForIds: String
+        val queryForYear: String
+        val queryForInsert: String
+
+        when (contentType) {
+            ContentType.Film -> {
+                queryForIds = "SELECT id FROM db.film_series"
+                queryForYear = "SELECT year FROM db.film_series WHERE id = ?"
+                queryForInsert = "INSERT INTO db.film_series (name, description) VALUES (?, ?) RETURNING id;"
+            }
+            ContentType.Book -> {
+                queryForIds = "SELECT id FROM db.book_series"
+                queryForYear = "SELECT year FROM db.book_series WHERE id = ?"
+                queryForInsert = "INSERT INTO db.book_series (name, description) VALUES (?, ?) RETURNING id;"
+            }
+            ContentType.Music -> {
+                queryForIds = "SELECT id FROM db.music_album"
+                queryForYear = "SELECT year FROM db.music_album WHERE id = ?"
+                queryForInsert = "INSERT INTO db.music_album (name, year, poster) VALUES (?, ?, ?) RETURNING id;"
+            }
         }
 
         // Выбор: true - берём из бд, false - генерим новый
@@ -903,7 +925,7 @@ class Randomizer {
 
         // Если берём из бд, заполняем список id существующих серий из соответствующей таблицы
         if (exist)
-            db.query(db.getConnect().prepareStatement("SELECT id FROM $table;"))
+            db.query(db.getConnect().prepareStatement(queryForIds))
                 .onEach { seriesIds.add(it["id"] as Int) }
 
         if (exist && seriesIds.isNotEmpty()) {    // Если мы берём из бд и соответстующая таблица не пустая
@@ -911,7 +933,7 @@ class Randomizer {
             id = seriesIds.random()
             // Получение из бд года альбома, если создаётся альбом, иначе null
             yearOfAlbum = if (contentType == ContentType.Music)
-                db.query(db.getConnect().prepareStatement("SELECT year FROM $table WHERE id = ?").apply {
+                db.query(db.getConnect().prepareStatement(queryForYear).apply {
                     setInt(1, id)
                 })[0]["year"] as Int
             else null
@@ -939,7 +961,7 @@ class Randomizer {
 
             // Запись серии в бд (соответствующая таблица)
             val statement = if (contentType != ContentType.Music) {
-                db.getConnect().prepareStatement("INSERT INTO $table (name, description) VALUES (?, ?) RETURNING id;")
+                db.getConnect().prepareStatement(queryForInsert)
                     .apply {
                         setString(1, name)
                         if (desc != null)
@@ -949,7 +971,7 @@ class Randomizer {
                     }
             } else {
                 db.getConnect()
-                    .prepareStatement("INSERT INTO $table (name, year, poster) VALUES (?, ?, ?) RETURNING id;")
+                    .prepareStatement(queryForInsert)
                     .apply {
                         setString(1, name)
                         setInt(2, yearOfAlbum!!)
