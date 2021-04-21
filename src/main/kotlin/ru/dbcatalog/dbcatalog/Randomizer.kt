@@ -141,7 +141,7 @@ class Randomizer {
             }
         }
 
-        artistList.forEach {// TODO: Игорь заполняет таблицу music_has_artist. Данные - musicId, artistId (it)
+        artistList.forEach {// TODO: Игорь заполняет таблицу music_has_artist. Данные - musicId, artistId(it)
             @Language("PostgreSQL")
             query = "INSERT INTO db.music_has_artist (music_id, artist_id) VALUES (?, ?);"
             db.query(db.getConnect().prepareStatement(query).apply {
