@@ -65,9 +65,10 @@ class Randomizer {
             setInt(3, duration)
         })[0]["id"] as Int
 
+        if (musicAlbumExist) {
         // TODO: Где работа с таблицей music_has_album?
         // TODO: Игорь заполняет таблицу music_has_album. Данные - musicId, musicAlbumId
-
+        }
 
         // Генерация исполнителей   // TODO: как-нибудь упростить? Например, во всех ветках происходит работа с music_has_artist
         val artistList = mutableListOf<Int>() //Хранит только артистов
