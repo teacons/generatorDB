@@ -1,9 +1,7 @@
 package ru.dbcatalog.dbcatalog
 
-import java.io.File
-import java.io.InputStream
-import java.sql.Timestamp
 import org.intellij.lang.annotations.Language
+import java.sql.Timestamp
 import java.sql.Types.INTEGER
 import java.sql.Types.VARCHAR
 import java.util.*
@@ -274,7 +272,7 @@ class Randomizer {
         // Заполнение кросс-таблицы film_has_film_genre
         val genreEmpty = false  // TODO: Игорь выдирает из бд, пустая ли таблица film_genre
         if (genreEmpty)     // Если таблица с жанрами пустая, то заполняем её
-            fillGenre(0)
+            fillGenre(ContentType.Film)
         val lastIdGenre = 10 // TODO: Игорь выдирает из бд последний id жанра фильмов (таблица film_genre)
         val genreId = Random.nextInt(lastIdGenre + 1)
         // TODO: Игорь заполняет таблицу film_has_film_genre. Данные - filmId, genreId
@@ -351,7 +349,7 @@ class Randomizer {
         // Заполнение кросс-таблицы music_has_music_genre
         val genreEmpty = false  // TODO: Игорь выдирает из бд, пустая ли таблица music_genre
         if (genreEmpty)     // Если таблица с жанрами пустая, то заполняем её
-            fillGenre(1)
+            fillGenre(ContentType.Music)
         val lastIdGenre = 10 // TODO: Игорь выдирает из бд последний id жанра музыки (таблица music_genre)
         val genreId = Random.nextInt(lastIdGenre + 1)
         // TODO: Игорь заполняет таблицу music_has_music_genre. Данные - musicId, genreId
@@ -666,7 +664,7 @@ class Randomizer {
         val peopleYearList = mutableListOf<Int?>()
 
         for (i in 1..peopleNum) {
-            val people = randomPeople()
+            val people = randomPeople(-1)
             peopleIdList.add(people.first)
             peopleYearList.add(people.second)
         }
