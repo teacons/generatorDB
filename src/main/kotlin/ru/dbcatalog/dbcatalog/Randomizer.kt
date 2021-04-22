@@ -832,7 +832,7 @@ class Randomizer {
                             if (Random.nextBoolean())
                                 "Место его рождения - ${placeList.random()}. "
                             else
-                                "Родился он местечке, известном под названием ${placeList.random()}. "
+                                "Родился он в местечке, известном под названием ${placeList.random()}. "
                         )
                         .append("Он записал ${Random.nextInt(5, 16)} успешных альбомов и прославился по всему миру.")
                 } else {        // Если группа
