@@ -66,6 +66,7 @@ class DB {
 
     fun closeConnection() {
         connection.close()
+        connectionTransaction.commit()
         connectionTransaction.close()
     }
 
