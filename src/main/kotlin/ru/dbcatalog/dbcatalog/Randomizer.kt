@@ -26,7 +26,7 @@ class Randomizer {
 
     val db = DB()
 
-    fun readingFile(name: String): List<String> {
+    private fun readingFile(name: String): List<String> {
         val inputStream = this::class.java.classLoader.getResourceAsStream(name)
         val list = mutableListOf<String>()
         inputStream!!.bufferedReader().forEachLine { list.add(it) }
@@ -75,7 +75,7 @@ class Randomizer {
             }.executeUpdate()
         }
 
-        // Генерация исполнителей   // TODO: как-нибудь упростить? Например, во всех ветках происходит работа с music_has_artist
+        // Генерация исполнителей
         val artistList = mutableListOf<Int>() //Хранит только артистов
         val artistIds = mutableListOf<Int>()
 
@@ -157,7 +157,7 @@ class Randomizer {
             }.executeUpdate()
         }
 
-        // Получение списка жанров    // TODO: У песни может быть несколько жанров
+        // Получение списка жанров
         val genreIds = getGenresIdsByType(ContentType.Music)    // список id жанров
 
         // Генерация количества жанров
@@ -307,7 +307,7 @@ class Randomizer {
 
         }
 
-        // Получение списка жанров фильма   // TODO: У фильма может быть несколько жанров
+        // Получение списка жанров фильма
         val genreIds = getGenresIdsByType(ContentType.Film)
 
         // Генерация количества жанров

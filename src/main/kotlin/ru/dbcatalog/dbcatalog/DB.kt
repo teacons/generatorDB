@@ -37,15 +37,6 @@ class DB {
         }
     }
 
-    fun execute(query: String) {
-        if (connectionTransaction.isClosed) openConnectionTransaction()
-        connectionTransaction.createStatement().executeUpdate(query)
-    }
-
-    fun commit() {
-        connectionTransaction.commit()
-    }
-
     fun getConnect(): Connection {
         if (connection.isClosed) openConnection()
         return connection
