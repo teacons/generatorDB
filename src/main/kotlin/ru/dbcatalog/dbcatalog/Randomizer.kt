@@ -26,7 +26,7 @@ class Randomizer {
 
     val db = DB()
 
-    private fun readingFile(name: String): List<String> {
+    fun readingFile(name: String): List<String> {
         val inputStream = this::class.java.classLoader.getResourceAsStream(name)
         val list = mutableListOf<String>()
         inputStream!!.bufferedReader().forEachLine { list.add(it) }
@@ -509,14 +509,25 @@ class Randomizer {
 
     fun addUser(): Int {
         // Генерация username
+        val userNamesFromDB = mutableListOf<String>()
+
+        @Language("PostgreSQL")
+        val queryForGetUsernamesFromDB = "SELECT username FROM db.user"
+        db.queryWithResult(db.getConnect().prepareStatement(queryForGetUsernamesFromDB))
+            .onEach { userNamesFromDB.add(it["username"] as String) }
+
         val userNameWordList = readingFile("forUserName.txt")
         val stringBuilderForUserName = StringBuilder()
-        while (stringBuilderForUserName.length < 6) {
+        while (stringBuilderForUserName.length < 6 || userNameWordList.contains(stringBuilderForUserName.toString())) {
             val word = userNameWordList.random()
-            if (stringBuilderForUserName.length + word.length < 20)
+            if (stringBuilderForUserName.length + word.length < 20) {
                 stringBuilderForUserName.append(word)
-            else
-                break
+
+            } else
+                if (userNameWordList.contains(stringBuilderForUserName.toString()))
+                    stringBuilderForUserName.clear()
+                else break
+
         }
         val userName = stringBuilderForUserName.toString()
 

@@ -4,21 +4,14 @@ import org.kohsuke.args4j.Argument
 import org.kohsuke.args4j.CmdLineException
 import org.kohsuke.args4j.CmdLineParser
 import org.kohsuke.args4j.Option
+import java.io.BufferedWriter
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
 
 fun main(args: Array<String>) {
-    println("Time start: ${SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())}")
-    val timeStart = Calendar.getInstance().timeInMillis
     val launcher = Launcher()
-    launcher.launch(args.toMutableList())
-    println("Time finish: ${SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())}")
-    println("Elapsed time: ${Calendar.getInstance().timeInMillis - timeStart}")
-
-//    val r = Randomizer()
-//    for (i in 1..1000) {
-//        println(r.addUser())
-//    }
+    launcher.launch(args.toList())
 }
 
 class Launcher {
@@ -31,12 +24,14 @@ class Launcher {
     @Argument(required = true, usage = "type of content")
     private var type = "book"
 
-    fun launch(args: MutableList<String>) {
+    fun launch(args: List<String>) {
         val parser = CmdLineParser(this)
         val randomizer = Randomizer()
 
         try {
             parser.parseArgument(args)
+            println("Time start: ${SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())}")
+            val timeStart = Calendar.getInstance().timeInMillis
             for (i in 1..num) {
                 when (type) {
                     "book" -> randomizer.addBook()
@@ -49,10 +44,12 @@ class Launcher {
                         "music" -> randomizer.addTop(1)
                         else -> randomizer.addTop()
                     }
-                    "KILLPLEASE" -> DB().emptyTables()
+                    "killtables" -> DB().emptyTables()
                     else -> throw IllegalArgumentException("Invalid type specified")
                 }
             }
+            println("Time finish: ${SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())}")
+            println("Elapsed time: ${Calendar.getInstance().timeInMillis - timeStart}")
             println("Data generated successfully")
         } catch (e: CmdLineException) {
             System.err.println(e.message)
