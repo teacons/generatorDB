@@ -24,7 +24,7 @@ tasks.test {
     useJUnitPlatform()
 }
 
-tasks.withType<KotlinCompile>() {
+tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
 
@@ -38,7 +38,7 @@ tasks.jar {
             mapOf(
                 "Implementation-Title" to project.name,
                 "Implementation-Version" to project.version,
-                "Main-Class" to "MainKt"
+                "Main-Class" to "ru.dbcatalog.dbcatalog.MainKt"
             )
         )
     }

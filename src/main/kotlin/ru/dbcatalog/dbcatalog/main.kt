@@ -4,12 +4,21 @@ import org.kohsuke.args4j.Argument
 import org.kohsuke.args4j.CmdLineException
 import org.kohsuke.args4j.CmdLineParser
 import org.kohsuke.args4j.Option
+import java.text.SimpleDateFormat
+import java.util.*
 
 fun main(args: Array<String>) {
-//    val launcher = ru.db_catalog.db_catalog.Launcher()
-//    launcher.launch(args.toMutableList())
-    val r = Randomizer()
-    r.addBook()
+    println("Time start: ${SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())}")
+    val timeStart = Calendar.getInstance().timeInMillis
+    val launcher = Launcher()
+    launcher.launch(args.toMutableList())
+    println("Time finish: ${SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())}")
+    println("Elapsed time: ${Calendar.getInstance().timeInMillis - timeStart}")
+
+//    val r = Randomizer()
+//    for (i in 1..1000) {
+//        println(r.addUser())
+//    }
 }
 
 class Launcher {
@@ -24,17 +33,10 @@ class Launcher {
 
     fun launch(args: MutableList<String>) {
         val parser = CmdLineParser(this)
+        val randomizer = Randomizer()
 
         try {
             parser.parseArgument(args)
-        } catch (e: CmdLineException) {
-            System.err.println(e.message)
-            System.err.println("java -jar generatorDB.jar book/film/music/user/top [-t type of content for top] quantity")
-            parser.printUsage(System.err)
-        }
-
-        try {
-            val randomizer = Randomizer()
             for (i in 1..num) {
                 when (type) {
                     "book" -> randomizer.addBook()
@@ -47,12 +49,20 @@ class Launcher {
                         "music" -> randomizer.addTop(1)
                         else -> randomizer.addTop()
                     }
-                    else -> throw java.lang.Exception("Invalid type specified")
+                    "KILLPLEASE" -> DB().emptyTables()
+                    else -> throw IllegalArgumentException("Invalid type specified")
                 }
             }
             println("Data generated successfully")
+        } catch (e: CmdLineException) {
+            System.err.println(e.message)
+            System.err.println("java -jar generatorDB.jar book/film/music/user/top [-t type of content for top] quantity")
+            parser.printUsage(System.err)
         } catch (e: Exception) {
             System.err.println(e.message)
+            e.printStackTrace()
+        } finally {
+            randomizer.db.closeConnection()
         }
     }
 }
