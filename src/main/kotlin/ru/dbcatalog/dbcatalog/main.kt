@@ -4,10 +4,17 @@ import org.kohsuke.args4j.Argument
 import org.kohsuke.args4j.CmdLineException
 import org.kohsuke.args4j.CmdLineParser
 import org.kohsuke.args4j.Option
+import sun.misc.Signal
+import sun.misc.SignalHandler
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.system.exitProcess
+
+var timeStart = 0L
 
 fun main(args: Array<String>) {
+
+
     val launcher = Launcher()
     launcher.launch(args.toList())
 }
@@ -26,10 +33,19 @@ class Launcher {
         val parser = CmdLineParser(this)
         val randomizer = Randomizer()
 
+        // Обработка сигнала SIGINT
+        Signal.handle(Signal("INT")) {
+            println("\nUhhh... SIGINT!")
+            println("Time finish: ${SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())}")
+            println("Elapsed time: ${Calendar.getInstance().timeInMillis - timeStart}")
+            randomizer.db.closeConnection()
+            exitProcess(0)
+        }
+
         try {
             parser.parseArgument(args)
             println("Time start: ${SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())}")
-            val timeStart = Calendar.getInstance().timeInMillis
+            timeStart = Calendar.getInstance().timeInMillis
             for (i in 1..num) {
                 when (type) {
                     "book" -> randomizer.addBook()
@@ -42,7 +58,7 @@ class Launcher {
                         "music" -> randomizer.addTop(1)
                         else -> randomizer.addTop()
                     }
-                    "killtables" -> DB().emptyTables()
+                    "killtables" -> randomizer.db.emptyTables()
                     else -> throw IllegalArgumentException("Invalid type specified")
                 }
             }

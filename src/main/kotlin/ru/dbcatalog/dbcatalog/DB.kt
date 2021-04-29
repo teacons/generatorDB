@@ -13,7 +13,7 @@ class DB {
         setProperty("password", "B8RCcsgy0")
         setProperty("ssl", "false")
     }
-    private var connection: Connection = DriverManager.getConnection(url, props)
+    private var connection: Connection = DriverManager.getConnection(url, props).apply { autoCommit = false }
 
     private var connectionTransaction: Connection = DriverManager.getConnection(url, props).apply { autoCommit = false }
 
@@ -44,7 +44,7 @@ class DB {
 
     fun getConnectTransaction(): Connection {
         if (connection.isClosed) openConnectionTransaction()
-        return connectionTransaction
+        return connection
     }
 
     private fun openConnection() {
@@ -56,6 +56,7 @@ class DB {
     }
 
     fun closeConnection() {
+        connection.commit()
         connection.close()
         connectionTransaction.commit()
         connectionTransaction.close()
