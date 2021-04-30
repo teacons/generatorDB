@@ -15,9 +15,6 @@ class DB {
     }
     private var connection: Connection = DriverManager.getConnection(url, props).apply { autoCommit = false }
 
-    private var connectionTransaction: Connection = DriverManager.getConnection(url, props).apply { autoCommit = false }
-
-
     fun queryWithResult(statement: PreparedStatement): List<Map<String, Any?>> {
         return try {
             if (connection.isClosed) openConnection()
@@ -39,11 +36,7 @@ class DB {
 
     fun getConnect(): Connection {
         if (connection.isClosed) openConnection()
-        return connection
-    }
 
-    fun getConnectTransaction(): Connection {
-        if (connection.isClosed) openConnectionTransaction()
         return connection
     }
 
@@ -51,15 +44,9 @@ class DB {
         connection = DriverManager.getConnection(url, props)
     }
 
-    private fun openConnectionTransaction() {
-        connection = DriverManager.getConnection(url, props)
-    }
-
     fun closeConnection() {
         connection.commit()
         connection.close()
-        connectionTransaction.commit()
-        connectionTransaction.close()
     }
 
     fun emptyTables() {

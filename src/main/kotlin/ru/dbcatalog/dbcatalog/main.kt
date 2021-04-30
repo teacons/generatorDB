@@ -5,7 +5,6 @@ import org.kohsuke.args4j.CmdLineException
 import org.kohsuke.args4j.CmdLineParser
 import org.kohsuke.args4j.Option
 import sun.misc.Signal
-import sun.misc.SignalHandler
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.system.exitProcess
